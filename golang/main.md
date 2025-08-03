@@ -1,0 +1,353 @@
+# Getter / Setter
+
+Go dont need getter or setter. You can export field what you need.
+But if you need this, you can write this easely:
+
+For getter  
+
+```go
+type Dog struct {
+    owner string
+}
+
+func (d *Dog) Owner() string {
+    return d.owner
+}
+``` 
+
+For setter  
+
+```go
+func (d *Dog) SetOwner(owner string) {
+    d.owner = owner
+}
+```
+
+# Interface names
+
+By convention, one-method interfaces are named by the method name plus an -er suffix or similar modification to construct an agent noun: Reader, Writer, Formatter, CloseNotifier etc.
+
+# MixedCaps
+
+Finally, the convention in Go is to use MixedCaps or mixedCaps rather than underscores to write multiword names.
+
+# Semicolons
+
+Go's formal grammar uses semicolons to terminate statements, but those semicolons do not appear in the source. Instead the lexer uses a simple rule to insert semicolons automatically as it scans, so the input text is mostly free of them. Idiomatic Go programs have semicolons only in places such as for loop clauses, to separate the initializer, condition, and continuation elements
+
+One consequence of the semicolon insertion rules is that you cannot put the opening brace of a control structure (if, for, switch, or select) on the next line. If you do, a semicolon will be inserted before the brace, which could cause unwanted effects. Write them like this.
+
+# Control structures
+
+## If
+
+```go
+if err := file.Chmod(0664); err != nil {
+    log.Print(err)
+    return err
+}
+```
+
+## Redeclaration and reassignment
+
+This is := short declaration
+
+```go
+f, err := os.Open(name)
+d, err := f.Stat()
+
+```
+
+This duplication is legal: err is declared by the first statement, but only re-assigned in the second. This means that the call to f.Stat uses the existing err variable declared above, and just gives it a new value.
+
+## For
+
+For loop unifies for and while and there is no do-while. There are three forms, only one of which has semicolons.
+
+```go
+// for init; condition; post { }
+sum := 0
+for i := 0; i < 10; i++ {
+    sum += i
+}
+
+// for condition { }
+sum := 0
+for sum < 5 {
+	sum++
+}
+
+// for { }
+sum := 0
+for {
+	sum++
+	if sum == 5 {
+		break
+	}
+}
+```
+
+If you're looping over an array, slice, string, or map, or reading from a channel, a range clause can manage the loop.
+
+```go
+for key, value := range oldMap {
+    newMap[key] = value
+}
+```
+
+## Switch
+
+The first matching case runs, and execution exits the switch (no need for break like in C). You can group multiple cases with commas. default is used when no case matches.
+
+
+```go
+day := 3
+
+switch day {
+case 1:
+	fmt.Println("Monday")
+case 2:
+	fmt.Println("Tuesday")
+case 3:
+	fmt.Println("Wednesday")
+case 4, 5:
+	fmt.Println("Thursday or Friday")
+default:
+	fmt.Println("Weekend")
+}
+```
+
+And if the switch has no expression it switches on true.
+
+```go
+age := 25
+
+switch {
+case age < 13:
+	fmt.Println("Child")
+case age < 20:
+	fmt.Println("Teenager")
+case age < 65:
+	fmt.Println("Adult")
+default:
+	fmt.Println("Senior")
+}
+```
+
+## Type switch
+
+A switch can also be used to discover the dynamic type of an interface variable. Such a type switch uses the syntax of a type assertion with the keyword type inside the parentheses. If the switch declares a variable in the expression, the variable will have the corresponding type in each clause. It's also idiomatic to reuse the name in such cases, in effect declaring a new variable with the same name but a different type in each case.
+
+```go
+var t interface{}
+t = functionOfSomeType()
+switch t := t.(type) {
+default:
+    fmt.Printf("unexpected type %T\n", t)     // %T prints whatever type t has
+case bool:
+    fmt.Printf("boolean %t\n", t)             // t has type bool
+case int:
+    fmt.Printf("integer %d\n", t)             // t has type int
+case *bool:
+    fmt.Printf("pointer to boolean %t\n", *t) // t has type *bool
+case *int:
+    fmt.Printf("pointer to integer %d\n", *t) // t has type *int
+}
+```
+
+# Functions
+
+## Multiple return values
+
+```go
+func (file *File) Write(b []byte) (n int, err error)
+```
+
+A similar approach obviates the need to pass a pointer to a return value to simulate a reference parameter.
+
+```go
+func coords() (float64, float64) {
+    return 12.34, 56.78
+}
+```
+
+## Named result parameters
+
+But if you use named return values, you can just write return without arguments. When named, they are initialized to the zero values for their types when the function begins.
+
+```go
+func coords() (x float64, y float64) {
+    x = 12.34
+    y = 56.78
+    return // можно просто return
+}
+```
+
+## Defer
+
+defer delays the execution of a function until the surrounding function returns — whether it ends normally or due to an error.
+
+```go
+func example() {
+    fmt.Println("start")
+    defer fmt.Println("deferred")
+    fmt.Println("end")
+}
+
+output:
+
+start
+end
+deferred
+```
+
+Deferred functions are executed in LIFO order, so this code will cause 4 3 2 1 0 to be printed when the function returns.
+
+```go
+for i := 0; i < 5; i++ {
+    defer fmt.Printf("%d ", i)
+}
+```
+
+# Data
+
+## Allocation with new
+
+new(T) allocates memory for type T, fills it with zero values, and returns a pointer (*T). It's useful when you want a pointer, but don't want to write &x
+
+```go
+type User struct {
+    ID   int
+    Name string
+}
+
+func main() {
+    u := new(User) // u is *User
+    u.ID = 10
+    u.Name = "Alice"
+    fmt.Println(u.ID, u.Name) // ➜ 10 Alice
+}
+```
+
+## Constructors and composite literals
+Composite literals simplify initialization and are commonly used in such constructors.
+
+```go
+type File struct {
+    fd      int
+    name    string
+    dirinfo interface{}
+    nepipe  int
+}
+
+// Constructor-like function
+func NewFile(fd int, name string) *File {
+    if fd < 0 {
+        return nil
+    }
+    return &File{fd: fd, name: name}
+}
+
+// Or without labeling
+return &File{fd, name}
+
+// Or with null values
+return &File{}
+```
+
+Composite literals can also be created for arrays, slices, and maps, with the field labels being indices or map keys as appropriate.
+```go
+a := [...]string   {Enone: "no error", Eio: "Eio", Einval: "invalid argument"}
+s := []string      {Enone: "no error", Eio: "Eio", Einval: "invalid argument"}
+m := map[int]string{Enone: "no error", Eio: "Eio", Einval: "invalid argument"}
+```
+
+## Allocation with make
+
+**make** is not just memory allocation — it initializes the internal structure of slices, maps, and channels. Without this step, these types are nil and non-functional.
+It prepares them for safe and predictable usage by allocating backing memory and setting internal fields like length, capacity, and map internals.
+
+```go
+// slice
+s := make([]int, 5)
+// s is now []int{0, 0, 0, 0, 0}, length = 5, capacity = 5
+
+// map
+m := make(map[string]int)
+// m is ready to use, e.g., m["key"] = 42
+
+// channel 
+c := make(chan int, 10)
+// c is a buffered channel with capacity 10
+```
+
+# Arrays
+
+Arrays are useful when planning the detailed layout of memory and sometimes can help avoid allocation, but primarily they are a building block for slices.
+
+There are major ways how arrays work in Go:
+
+* Arrays are values. Assigning one array to another copies all the elements.
+* In particular, if you pass an array to a function, it will receive a copy of the array, not a pointer to it.
+* The size of an array is part of its type. The types [10]int and [20]int are distinct.
+
+```go
+var numbers [3]int
+
+numbers[0] = 10
+numbers[1] = 20
+numbers[2] = 30
+
+for i, value := range numbers {
+    fmt.Printf("numbers[%d] = %d\n", i, value)
+}
+
+// or 
+values := [3]string{"Go", "is", "cool"}
+fmt.Println(values)
+```
+
+# Slices
+
+Slices wrap arrays to give a more general, powerful, and convenient interface to sequences of data. Slices hold references to an underlying array, and if you assign one slice to another, both refer to the same array. If a function takes a slice argument, changes it makes to the elements of the slice will be visible to the caller, analogous to passing a pointer to the underlying array.
+
+```go
+numbers := []int{1, 2, 3, 4, 5}
+```
+
+## Two-dimensional slices
+
+Go's arrays and slices are one-dimensional. To create the equivalent of a 2D array or slice, it is necessary to define an array-of-arrays or slice-of-slices, like this:
+
+```go
+type Transform [3][3]float64  // A 3x3 array, really an array of arrays.
+type LinesOfText [][]byte     // A slice of byte slices.
+
+// With constructor  
+text := LinesOfText{
+    []byte("Now is the time"),
+    []byte("for all good gophers"),
+    []byte("to bring some fun to the party."),
+}
+```
+
+# Maps
+
+Maps are a convenient and powerful built-in data structure that associate values of one type (the key) with values of another type (the element or value). The key can be of any type for which the equality operator is defined, such as integers, floating point and complex numbers, strings, pointers, interfaces (as long as the dynamic type supports equality), structs and arrays. Slices cannot be used as map keys, because equality is not defined on them. Like slices, maps hold references to an underlying data structure. If you pass a map to a function that changes the contents of the map, the changes will be visible in the caller.
+
+```go
+var timeZone = map[string]int{
+    "UTC":  0*60*60,
+    "EST": -5*60*60,
+    "CST": -6*60*60,
+    "MST": -7*60*60,
+    "PST": -8*60*60,
+}
+
+if timeZone[USA] { // will be false if USA is not in the map
+    fmt.Println(USA, "is in the map")
+}
+```
+
+# nil (Nothing In List)
+nil represents the zero value for reference types such as pointers, slices, maps, interfaces, channels, and function types. It means "no value" or "not initialized". A nil value does not point to any valid memory or data structure. Attempting to operate on nil without proper checks may lead to a runtime panic.
